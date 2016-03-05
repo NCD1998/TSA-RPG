@@ -222,6 +222,39 @@ public class MainLoop {
 					flag = false;
 				}
 			}
+				
+			if(skillPoints > 0){
+				System.out.println("Your remaining " + skillPoints + " will be assigned in order.");
+				while(skillPoints > 0){
+					if(lck != 8){
+						lck++;
+						skillPoints--;
+					}else if(spd != 8){
+						spd++;
+						skillPoints--;
+					}else if(intel != 8){
+						intel++;
+						skillPoints--;
+					}else if(dex != 8){
+						dex++;
+						skillPoints--;
+					}else if(con != 8){
+						con++;
+						skillPoints--;
+					}else if(str != 8){
+						str++;
+						skillPoints--;
+					}
+				}
+			}
+			System.out.println("Final skill points: ");
+			System.out.println("STR: " + str);
+			System.out.println("CON: " + con);
+			System.out.println("DEX: " + dex);
+			System.out.println("INT: " + intel);
+			System.out.println("SPD: " + spd);
+			System.out.println("LCK: " + lck);
+			
 	}
 	
 	
