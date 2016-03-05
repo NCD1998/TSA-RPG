@@ -6,4 +6,8 @@ public class trap {
 	public trap(int lvl){
 		level = lvl;
 	}
+	
+	public int getLevel(){
+		return level;
+	}
 }

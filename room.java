@@ -19,7 +19,12 @@ public class room {
 	}
 	
 	public mob getMob(){
-		return enemy;
+		if(enemy != null){
+			return enemy;
+		}else{
+			return null;
+		}
+		
 	}
 	
 	public trap getTrap(){
@@ -47,9 +52,9 @@ public class room {
 	}
 	
 	public String look(){
-		if(loot != null){
+		/*if(loot != null){
 			return "You see a chest in the room. Possibly filled with loot";
-		}
+		}*/
 		Random rand = new Random();
 		int randInt = rand.nextInt(5);
 		if(randInt == 0){

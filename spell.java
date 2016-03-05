@@ -14,7 +14,19 @@ public class spell {
 	}
 
 	public boolean cast(mob mob) {
-		// TODO Auto-generated method stub
+		if(name.equalsIgnoreCase("Energy Blast")){
+			if(MainLoop.magic < cost){
+				mob.hurt(effectLevel + MainLoop.intel/4);
+				return true;
+			}else{
+				return false;
+			}
+			
+			
+			
+		}
+		
+		
 		return false;
 	}
 

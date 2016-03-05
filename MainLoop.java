@@ -6,6 +6,7 @@ import java.util.Scanner;
 
 public class MainLoop {
 	
+	
 	//Random
 	static Random rand = new Random();
 	 //Input scanner
@@ -56,10 +57,15 @@ public class MainLoop {
 	static int[][] playerPosition = {{2},{2}};
 	//Level 1 Map
 	static room[][] Lev1Rooms = new room[5][5];
+	static room[][] Lev2Rooms = new room[5][5];
+	static room[][] Lev3Rooms = new room[5][5];
+	static room[][] Lev4Rooms = new room[5][5];
+	static room[][] Lev5Rooms = new room[5][5];
 	
 	static boolean alive = true;
 
 	public static void main(String[] args) {
+		//System.out.println("Game by Nathan Dinneen, Open Source on my GitHub at NCD1998 AntiCopy Right Licence");
 		//Start game build
 		System.out.println("Welcome to the Maze!");
 		System.out.println("This game is controlled through a text based interface!");
@@ -342,9 +348,27 @@ public class MainLoop {
 				System.out.println("Move: Go to a different room");
 				System.out.println("Interact: Act on an object in a room");
 				System.out.println("Use: Use Item in hand");
+				System.out.println("Spells: View Spells");
 				System.out.println("Stats: See character stats");
-				buildLevel(Lev1Rooms);
+				buildLevel1();
 				beginLevelLoop(Lev1Rooms);
+				currentLevel = 2;
+				roundsThisLevel = 0;
+				buildLevel2();
+				beginLevelLoop(Lev2Rooms);
+				currentLevel = 3;
+				roundsThisLevel = 0;
+				buildLevel3();
+				beginLevelLoop(Lev3Rooms);
+				currentLevel = 4;
+				roundsThisLevel = 0;
+				buildLevel4();
+				beginLevelLoop(Lev4Rooms);
+				currentLevel = 5;
+				roundsThisLevel = 0;
+				buildLevel5();
+				beginLevelLoop(Lev5Rooms);
+				System.out.println("You win");
 				
 			
 	}
@@ -352,7 +376,17 @@ public class MainLoop {
 	private static void beginLevelLoop(room[][] rooms) {
 		System.out.println(rooms[playerPosition[0][0]][playerPosition[1][0]].look());
 		boolean foundExit = false;
+		boolean alternate = false;
 		while(alive && !foundExit){
+			
+			if(alternate){
+				health++;
+				magic++;
+				alternate = !alternate;
+			}else{
+				alternate = !alternate;
+			}
+			
 			System.out.println("What do you do?");
 			String command = input.nextLine();
 			if(command.equalsIgnoreCase("Look")){
@@ -366,7 +400,7 @@ public class MainLoop {
 					if( playerPosition[1][0] != 4){
 						playerPosition[1][0]++;
 						roundsThisLevel++;
-						triggerRoomEntry(rooms[playerPosition[0][0]][playerPosition[1][0]]);
+						triggerRoomEntry();
 					}else{
 						System.out.println("Can't move that way.");
 					}
@@ -374,7 +408,7 @@ public class MainLoop {
 					if( playerPosition[1][0] != 0){
 						playerPosition[1][0]--;
 						roundsThisLevel++;
-						triggerRoomEntry(rooms[playerPosition[0][0]][playerPosition[1][0]]);
+						triggerRoomEntry();
 					}else{
 						System.out.println("Can't move that way.");
 					}
@@ -382,7 +416,7 @@ public class MainLoop {
 					if( playerPosition[0][0] != 0){
 						playerPosition[0][0]--;
 						roundsThisLevel++;
-						triggerRoomEntry(rooms[playerPosition[0][0]][playerPosition[1][0]]);
+						triggerRoomEntry();
 					}else{
 						System.out.println("Can't move that way.");
 					}
@@ -390,23 +424,90 @@ public class MainLoop {
 					if( playerPosition[0][0] != 4){
 						playerPosition[0][0]++;
 						roundsThisLevel++;
-						triggerRoomEntry(rooms[playerPosition[0][0]][playerPosition[1][0]]);
+						triggerRoomEntry();
 					}else{
 						System.out.println("Can't move that way.");
 					}
 				}else{
 					System.out.println("Invaid Direction");
 				}
+			}else if(command.equalsIgnoreCase("Spells")){
+				getSpellInfo();
+			}else if(command.equalsIgnoreCase("Interact")){
+				if(rooms[playerPosition[0][0]][playerPosition[1][0]].isExit()){
+					foundExit = true;
+				}
+			}else if(command.equalsIgnoreCase("Use")){
+				System.out.println("Use the left or right item? (Left/Right)");
+				String leftorright = input.nextLine();
+				if(leftorright.equalsIgnoreCase("Right")){
+					if(rHand != null){
+						rHand.use();
+						System.out.println("Used " + rHand.getName());
+						
+					}else{
+						System.out.println("No Item");
+					}
+					
+				}else if(leftorright.equalsIgnoreCase("Left")){
+					if(lHand != null){
+						lHand.use();
+						System.out.println("Used " + lHand.getName());
+						
+					}else{
+						System.out.println("No item");
+					}
+				}else{
+					System.out.println("WOops, wrong input");
+				}
 			}
 		}
 	}
 
-	private static void triggerRoomEntry(room room) {
+	private static void triggerRoomEntry() {
+		room room = new room(generateLoot(currentLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
+		if(rand.nextInt(15) == 14){
+			room.setExit();
+		}
 		if(room.getMob() != null){
 			fightLoop(room.getMob(), room);
 		}
 		if(room.getTrap() != null){
-			
+			int diceroll = roll20Dice();
+			if(diceroll + dex > room.getTrap().getLevel() + 20){
+				System.out.println("You triggered an arrow trap! But you were successfully able to avoid it.");
+				room.setTrapDisabled();
+			}else{
+				System.out.println("You triggered an arrow trap! You lose Health and speed");
+				health -= room.getTrap().getLevel();
+				spd--;
+				Basespd--;
+				room.setTrapDisabled();
+			}
+		}
+		if(room.loot() != null){
+			System.out.println("You find a " + room.loot().getName());
+			System.out.println("Do you want to take it? (Yes or No)");
+			String answer = input.nextLine();
+			if(answer.equalsIgnoreCase("Yes")){
+				if(backPack1 == null){
+					backPack1 = room.loot();
+					room.setLootTaken();
+				}else if(backPack2 == null){
+					backPack2 = room.loot();
+					room.setLootTaken();
+				}else if(backPack3 == null){
+					backPack3 = room.loot();
+					room.setLootTaken();
+				}else if(backPack4 == null){
+					backPack4 = room.loot();
+					room.setLootTaken();
+				}else{
+					System.out.println("No empty Backpack slots. Drop Something first.");
+				}
+			}else{
+				System.out.println("Not taken.");
+			}
 		}
 		
 	}
@@ -506,6 +607,7 @@ public class MainLoop {
 					if(rHand != null){
 						madeAction = true;
 						rHand.use();
+						
 					}else{
 						System.out.println("That Hand is Empty Fool");
 					}
@@ -513,6 +615,7 @@ public class MainLoop {
 					if(lHand != null){
 						madeAction = true;
 						lHand.use();
+						
 					}else{
 						System.out.println("That Hand is Empty Fool");
 					}
@@ -1034,7 +1137,7 @@ public class MainLoop {
 		}
 	}
 
-	private static void buildLevel(room[][] rooms) {
+	private static void buildLevel1() {
 		int lootChance = (roll20Dice() + lck/2 + currentLevel);
 		int lootLevel = 0;
 		if(lootChance > 10){
@@ -1047,7 +1150,7 @@ public class MainLoop {
 			lootLevel = 4;
 		}
 		
-		rooms[2][2] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
+		Lev1Rooms[2][2] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
 		//generate rooms off of that
 		for(int x = 0; x < 5; x++){
 			for(int y = 0; y < 5; y++){
@@ -1064,7 +1167,7 @@ public class MainLoop {
 						lootLevel = 4;
 					}
 					
-					rooms[x][y] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), generatePossibleTrap());
+					Lev1Rooms[x][y] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), generatePossibleTrap());
 				}
 			}
 		}
@@ -1073,15 +1176,223 @@ public class MainLoop {
 		boolean randBool2 = rand.nextBoolean();
 		if(randBool){
 			if(randBool2){
-				rooms[0][rand.nextInt(5)].setExit();
+				Lev1Rooms[0][rand.nextInt(5)].setExit();
 			}else{
-				rooms[4][rand.nextInt(5)].setExit();
+				Lev1Rooms[4][rand.nextInt(5)].setExit();
 			}
 		}else{
 			if(randBool2){
-				rooms[rand.nextInt(5)][0].setExit();
+				Lev1Rooms[rand.nextInt(5)][0].setExit();
 			}else{
-				rooms[rand.nextInt(5)][4].setExit();
+				Lev1Rooms[rand.nextInt(5)][4].setExit();
+			}
+		}
+		
+	}
+	private static void buildLevel2() {
+		int lootChance = (roll20Dice() + lck/2 + currentLevel);
+		int lootLevel = 0;
+		if(lootChance > 10){
+			lootLevel = 1;
+		}else if(lootChance > 15){
+			lootLevel = 2;
+		}else if(lootChance > 20){
+			lootLevel = 3;
+		}else if(lootChance > 25){
+			lootLevel = 4;
+		}
+		
+		Lev2Rooms[2][2] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
+		//generate rooms off of that
+		for(int x = 0; x < 5; x++){
+			for(int y = 0; y < 5; y++){
+				if(x != 2 && y != 2){
+					lootChance = (roll20Dice() + lck/2 + currentLevel);
+					lootLevel = 0;
+					if(lootChance > 10){
+						lootLevel = 1;
+					}else if(lootChance > 15){
+						lootLevel = 2;
+					}else if(lootChance > 20){
+						lootLevel = 3;
+					}else if(lootChance > 25){
+						lootLevel = 4;
+					}
+					
+					Lev2Rooms[x][y] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), generatePossibleTrap());
+				}
+			}
+		}
+		
+		boolean randBool = rand.nextBoolean();
+		boolean randBool2 = rand.nextBoolean();
+		if(randBool){
+			if(randBool2){
+				Lev2Rooms[0][rand.nextInt(5)].setExit();
+			}else{
+				Lev2Rooms[4][rand.nextInt(5)].setExit();
+			}
+		}else{
+			if(randBool2){
+				Lev2Rooms[rand.nextInt(5)][0].setExit();
+			}else{
+				Lev2Rooms[rand.nextInt(5)][4].setExit();
+			}
+		}
+		
+	}
+	private static void buildLevel3() {
+		int lootChance = (roll20Dice() + lck/2 + currentLevel);
+		int lootLevel = 0;
+		if(lootChance > 10){
+			lootLevel = 1;
+		}else if(lootChance > 15){
+			lootLevel = 2;
+		}else if(lootChance > 20){
+			lootLevel = 3;
+		}else if(lootChance > 25){
+			lootLevel = 4;
+		}
+		
+		Lev3Rooms[2][2] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
+		//generate rooms off of that
+		for(int x = 0; x < 5; x++){
+			for(int y = 0; y < 5; y++){
+				if(x != 2 && y != 2){
+					lootChance = (roll20Dice() + lck/2 + currentLevel);
+					lootLevel = 0;
+					if(lootChance > 10){
+						lootLevel = 1;
+					}else if(lootChance > 15){
+						lootLevel = 2;
+					}else if(lootChance > 20){
+						lootLevel = 3;
+					}else if(lootChance > 25){
+						lootLevel = 4;
+					}
+					
+					Lev3Rooms[x][y] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), generatePossibleTrap());
+				}
+			}
+		}
+		
+		boolean randBool = rand.nextBoolean();
+		boolean randBool2 = rand.nextBoolean();
+		if(randBool){
+			if(randBool2){
+				Lev3Rooms[0][rand.nextInt(5)].setExit();
+			}else{
+				Lev3Rooms[4][rand.nextInt(5)].setExit();
+			}
+		}else{
+			if(randBool2){
+				Lev3Rooms[rand.nextInt(5)][0].setExit();
+			}else{
+				Lev3Rooms[rand.nextInt(5)][4].setExit();
+			}
+		}
+		
+	}
+	private static void buildLevel4() {
+		int lootChance = (roll20Dice() + lck/2 + currentLevel);
+		int lootLevel = 0;
+		if(lootChance > 10){
+			lootLevel = 1;
+		}else if(lootChance > 15){
+			lootLevel = 2;
+		}else if(lootChance > 20){
+			lootLevel = 3;
+		}else if(lootChance > 25){
+			lootLevel = 4;
+		}
+		
+		Lev4Rooms[2][2] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
+		//generate rooms off of that
+		for(int x = 0; x < 5; x++){
+			for(int y = 0; y < 5; y++){
+				if(x != 2 && y != 2){
+					lootChance = (roll20Dice() + lck/2 + currentLevel);
+					lootLevel = 0;
+					if(lootChance > 10){
+						lootLevel = 1;
+					}else if(lootChance > 15){
+						lootLevel = 2;
+					}else if(lootChance > 20){
+						lootLevel = 3;
+					}else if(lootChance > 25){
+						lootLevel = 4;
+					}
+					
+					Lev4Rooms[x][y] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), generatePossibleTrap());
+				}
+			}
+		}
+		
+		boolean randBool = rand.nextBoolean();
+		boolean randBool2 = rand.nextBoolean();
+		if(randBool){
+			if(randBool2){
+				Lev4Rooms[0][rand.nextInt(5)].setExit();
+			}else{
+				Lev4Rooms[4][rand.nextInt(5)].setExit();
+			}
+		}else{
+			if(randBool2){
+				Lev4Rooms[rand.nextInt(5)][0].setExit();
+			}else{
+				Lev4Rooms[rand.nextInt(5)][4].setExit();
+			}
+		}
+		
+	}
+	private static void buildLevel5() {
+		int lootChance = (roll20Dice() + lck/2 + currentLevel);
+		int lootLevel = 0;
+		if(lootChance > 10){
+			lootLevel = 1;
+		}else if(lootChance > 15){
+			lootLevel = 2;
+		}else if(lootChance > 20){
+			lootLevel = 3;
+		}else if(lootChance > 25){
+			lootLevel = 4;
+		}
+		
+		Lev5Rooms[2][2] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), null);
+		//generate rooms off of that
+		for(int x = 0; x < 5; x++){
+			for(int y = 0; y < 5; y++){
+				if(x != 2 && y != 2){
+					lootChance = (roll20Dice() + lck/2 + currentLevel);
+					lootLevel = 0;
+					if(lootChance > 10){
+						lootLevel = 1;
+					}else if(lootChance > 15){
+						lootLevel = 2;
+					}else if(lootChance > 20){
+						lootLevel = 3;
+					}else if(lootChance > 25){
+						lootLevel = 4;
+					}
+					
+					Lev5Rooms[x][y] = new room(generateLoot(lootLevel), generatePossibleMob(currentLevel, roundsThisLevel), generatePossibleTrap());
+				}
+			}
+		}
+		
+		boolean randBool = rand.nextBoolean();
+		boolean randBool2 = rand.nextBoolean();
+		if(randBool){
+			if(randBool2){
+				Lev5Rooms[0][rand.nextInt(5)].setExit();
+			}else{
+				Lev5Rooms[4][rand.nextInt(5)].setExit();
+			}
+		}else{
+			if(randBool2){
+				Lev5Rooms[rand.nextInt(5)][0].setExit();
+			}else{
+				Lev5Rooms[rand.nextInt(5)][4].setExit();
 			}
 		}
 		
@@ -1139,7 +1450,7 @@ public class MainLoop {
 		}else{
 			itemName = type;
 		}
-		return Adj1 + " " + itemName + " " + Adj2 + " " + Noun;
+		return Adj1 + " " + itemName + " of " + Adj2 + " " + Noun;
 	}
 
 	private static String getNoun() {
